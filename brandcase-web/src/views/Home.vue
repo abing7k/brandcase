@@ -117,7 +117,7 @@ export default {
         status: ""
       },
       formInline: {
-        status: '',
+        status: "",
         companyName: '',
         brandName: ''
       },
@@ -161,14 +161,7 @@ export default {
           'Content-Type': 'application/json;charset=UTF-8'
         },
         url: "http://localhost:8081/selectQuery",
-        data: {
-          stauts: Number(this.formInline.status),
-          companyName: this.formInline.companyName,
-          brandName: this.formInline.brandName,
-          id: "",
-          ordered: "",
-          description: "",
-        },
+        data: this.formInline,
       }).then(resp => {
         console.log(resp, "多条件查询...")
         this.tableData = resp.data;

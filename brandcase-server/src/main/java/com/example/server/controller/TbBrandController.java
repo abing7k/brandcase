@@ -51,4 +51,5 @@ public class TbBrandController {
         return tbBrandService.list(queryWrapper);
     }
 
+
 }
