@@ -18,9 +18,19 @@
         <el-button type="primary" @click="selectQuery()">查询</el-button>
       </el-form-item>
     </el-form>
+
+    <!--批量删除,新增-->
+    <div>
+      <el-button type="danger" plain @click="deleteByIds()">批量删除</el-button>
+      <el-button type="primary" plain @click="addBrand()">新增</el-button>
+    </div>
+
+    <!--展示-->
     <el-table
         :data="tableData"
-        style="width: 100%">
+        style="width: 100%"
+        @selection-change="tableRowChange"
+    >
       <el-table-column
           type="selection"
           prop="id"
@@ -54,34 +64,38 @@
       </el-table-column>
 
       <el-table-column label="操作">
-        <el-button type="primary" @click="dialogFormVisible = true">修改</el-button>
-        <el-button type="danger">删除</el-button>
+        <template slot-scope="scope">
+          <el-button type="primary" @click="updateBrand(scope.row);">修改</el-button>
+          <el-button type="danger" @click="deleteBrand(scope.row.id)">删除</el-button>
+        </template>
       </el-table-column>
-
     </el-table>
 
-    <el-dialog title="收货地址" :visible.sync="dialogFormVisible">
-      <el-form :model="addForm">
+    <!--修改表格-->
+    <el-dialog title="收货地址" :visible.sync="updateFormVisible">
+      <el-form :model="updateForm">
         <el-form-item label="品牌名称" :label-width="formLabelWidth" prop="brandName">
-          <el-input v-model="addForm.brandName" autocomplete="off"></el-input>
+          <el-input v-model="updateForm.brandName" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="企业名称" :label-width="formLabelWidth" prop="companyName">
-          <el-input v-model="addForm.companyName" autocomplete="off"></el-input>
+          <el-input v-model="updateForm.companyName" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="订单量" :label-width="formLabelWidth" prop="ordered">
-          <el-input v-model="addForm.ordered" autocomplete="off"></el-input>
+          <el-input v-model="updateForm.ordered" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="备注" :label-width="formLabelWidth" prop="description">
-          <el-input v-model="addForm.description" autocomplete="off"></el-input>
+          <el-input v-model="updateForm.description" autocomplete="off"></el-input>
         </el-form-item>
         <el-form-item label="状态" :label-width="formLabelWidth">
-          <el-switch v-model="addForm.status"></el-switch>
+          <el-switch :active-value=1
+                     :inactive-value=0
+                     v-model="updateForm.status">
+          </el-switch>
         </el-form-item>
-
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">取 消</el-button>
-        <el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+        <el-button @click="updateFormVisible  = false">取 消</el-button>
+        <el-button type="primary" @click="updateExecute">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -105,6 +119,7 @@ export default {
   name: "Home",
   data() {
     return {
+      id: Number,
       currentPage1: 5,
       currentPage2: 5,
       currentPage3: 5,
@@ -116,13 +131,26 @@ export default {
         description: "",
         status: ""
       },
+      updateForm: {
+        id: "",
+        brandName: "",
+        companyName: "",
+        ordered: "",
+        description: "",
+        status: ""
+      },
       formInline: {
         status: "",
         companyName: '',
         brandName: ''
       },
-      tableData: [],
-
+      tableData: [{
+        brandName: '华为',
+        id: 1,
+        companyName: '华为科技有限公司',
+        ordered: '100',
+        status: "1"
+      }],
       form: {
         name: '',
         region: '',
@@ -133,7 +161,8 @@ export default {
         resource: '',
         desc: ''
       },
-      dialogFormVisible: false,
+      rowId: [],
+      updateFormVisible: false,
       formLabelWidth: '120px'
 
     }
@@ -141,12 +170,13 @@ export default {
 
   methods: {
     // 展示列表数据
-    pagedata() {
-      var _this = this;
+    selectAll() {
+      let _this = this;
       axios({
         method: "get",
         url: "http://localhost:8081/selectAll"
       }).then(function (resp) {
+        console.log(resp.data)
         _this.tableData = resp.data;
       })
     },
@@ -167,6 +197,79 @@ export default {
         this.tableData = resp.data;
       })
     },
+
+    deleteBrand(id) {
+      this.id = id
+      console.log(this.id)
+      axios({
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8'
+        },
+        method: "delete",
+        url: "http://localhost:8081/deleteById",
+        data: this.id
+      }).then(() => {
+        this.selectAll();
+      })
+    },
+
+    deleteByIds() {
+      let _this = this
+      this.$confirm('此操作将永久删除这些记录, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        axios({
+          url: "http://localhost:8081/deleteByIds",
+          method: "delete",
+          headers: {
+            'Content-Type': 'application/json;charset=UTF-8'
+          },
+          data: this.rowId
+        }).then(()=>{
+          this.selectAll()
+        })
+      })
+    },
+
+
+    tableRowChange(rowArr) {
+      let _this = this
+      _this.rowId = []
+      if (rowArr.length > 0) {
+        for (let item of rowArr) {
+          if (item.id) {
+            // console.log(_this.rowId)
+            _this.rowId.push(item.id)
+          }
+        }
+      }
+    },
+
+
+    //修改
+    updateBrand(row) {
+      this.updateForm = JSON.parse(JSON.stringify(row))
+      this.updateFormVisible = true
+    },
+    updateExecute() {
+      console.log(this.updateForm)
+      axios({
+        method: "post",
+        url: "http://localhost:8081/updateById",
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8'
+        },
+        data: this.updateForm
+      }).then((resp) => {
+        this.updateForm = resp.data;
+        this.updateFormVisible = false
+        this.selectAll();
+      })
+    },
+
+
     handleSizeChange(val) {
       console.log(`每页 ${val} 条`);
     },
@@ -184,7 +287,7 @@ export default {
   },
 
   mounted() {
-    this.pagedata()
+    this.selectAll()
   }
 
 }

@@ -6,6 +6,7 @@ import com.example.server.pojo.TbBrand;
 import com.example.server.service.ITbBrandService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -49,6 +50,31 @@ public class TbBrandController {
             }
         }
         return tbBrandService.list(queryWrapper);
+    }
+
+    @ApiOperation(value = "删除")
+    @DeleteMapping("/deleteById")
+    public Boolean deleteById(@RequestBody Integer id) {
+        System.out.println(id);
+        return tbBrandService.removeById(id);
+    }
+
+    @ApiOperation(value = "批量删除")
+    @DeleteMapping("/deleteByIds")
+    @Transactional
+    public Boolean deleteByIds(@RequestBody Integer[] ids) {
+        System.out.println(ids);
+        Boolean result = false;
+        for (int i = 0; i < ids.length; i++) {
+            result = tbBrandService.removeById(ids[i]);
+        }
+        return result;
+    }
+
+    @ApiOperation(value = "修改")
+    @PostMapping("/updateById")
+    public Boolean updateById(@RequestBody TbBrand tbBrand) {
+        return tbBrandService.updateById(tbBrand);
     }
 
 
